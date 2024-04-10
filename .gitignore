@@ -1,3 +1,4 @@
-*.txt
+stop_words.txt
+wiki_num_token.txt
 env/
 *.csv
