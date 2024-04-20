@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 parser = argparse.ArgumentParser()
 
-# -r -c
+# -r -c -s INITIAL_WIKI
 parser.add_argument("-r", '--randomize_search', action='store_true')
 parser.add_argument('-c', '--clean_text', action='store_true')
 parser.add_argument('-s', '--search', action='store')
@@ -55,16 +55,19 @@ def get_links_from_article(soup: BeautifulSoup):
         # Considering skipping files, but some contain useful things
         temp = link['href'].split('/')[2]
 
-        if temp.startswith("File:", 0, 5):
+        if temp.startswith("File:"):
             continue
 
-        elif temp.startswith("Category:", 0, 8):
-            continue
+        # elif temp.startswith("Category:"):
+        #     continue
         
-        elif temp.startswith("User:", 0, 5):
+        elif temp.startswith("User:"):
             continue
         
         elif temp.startswith("Special:BookSources"):
+            continue
+
+        elif temp.startswith("Editing"):
             continue
 
         wiki_links_list.append(link['href'])
@@ -84,12 +87,16 @@ def get_article(article_link):
         exit(1)
 
 
-def download_wiki_text(randomize_list: bool, clean_text_flag: bool, starting_wiki: bool):
+def download_wiki_text(randomize_list: bool, clean_text_flag: bool):
     """Scapes initial wiki article for text and links to branch and build data.csv."""
     # planned to keep track of origin article and all 
     # linked articles to create a graph
-    to_be_scraped = set([starting_wiki])
+
+    if args.search == None:
+        to_be_scraped = set(['/wiki/Category:Dark matter'])
     
+    else:
+        to_be_scraped = set([args.search])
     with open('wiki_num_token.txt', mode='r') as file:
         token = int(file.readline())
 
@@ -117,7 +124,7 @@ def download_wiki_text(randomize_list: bool, clean_text_flag: bool, starting_wik
 
                 token += 1
 
-            time.sleep(5)
+            # time.sleep(5)
 
     except KeyboardInterrupt:
         print("Ending search")
@@ -128,9 +135,24 @@ def download_wiki_text(randomize_list: bool, clean_text_flag: bool, starting_wik
 
 def clean_text(text):
     """Prepares text for usage in an inverted index."""
-    # removes non alphanumerics, case sensitivity, and stop words
+    # removes non alphanumerics and case sensitivity
     text = re.sub (r"[^a-zA-Z0-9 ]+", "", text)
     text = text.casefold()
+
+    # split text into list of whitespace-deliminated words
+    text = text.split()
+
+    stop_words = []
+    with open("stop_words.txt", mode='r') as file:
+        # generator expression, reads file line by line and 
+        # does not read entire file into memory
+        for word in (line.strip() for line in file):
+            stop_words.append(word)
+
+    for word in text:
+        if word in stop_words:
+            text.remove(word)
+            print(f"removed {word}")
 
     return text
 
@@ -140,7 +162,7 @@ if __name__ == "__main__":
 
     start_time = time.time()
     print(args.randomize_search, args.clean_text, args.search)
-    download_wiki_text(randomize_list=args.randomize_search, clean_text_flag=args.clean_text, starting_wiki=args.search)
+    download_wiki_text(randomize_list=args.randomize_search, clean_text_flag=args.clean_text)
     end_time = time.time()
 
     print("Elapsed time:", end_time - start_time, "seconds")
