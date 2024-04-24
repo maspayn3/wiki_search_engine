@@ -1,5 +1,11 @@
-stop_words.txt
-wiki_num_token.txt
+# environment files
 env/
+
+# settings
+.vscode/settings.json
+
+# data files
+wiki_num_token.txt
+stop_words.txt
 *.csv
-sql/
+sql/*.sqlite3
