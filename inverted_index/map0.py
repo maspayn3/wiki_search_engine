@@ -5,6 +5,5 @@ import csv
 
 csv.field_size_limit(sys.maxsize)
 COUNT = 1
-with open('../data.csv', mode='r') as file:
-    for row in csv.reader(file):
-        print(f"Doc\t{COUNT}")
+for row in csv.reader(sys.stdin):
+    print(f"Doc\t{COUNT}")
