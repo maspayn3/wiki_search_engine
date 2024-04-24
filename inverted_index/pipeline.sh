@@ -13,8 +13,10 @@ set -Eeuo pipefail
 # rid of previous output directories
 rm -rf output output[0-9]
 
+hdfs dfs -rm -r /user/hadoop/ouput0
+
 mapred streaming \
-    -input input \
-    -output ouput 0 \
+    -input input/ \
+    -output ouput0 \
     -mapper ./map0.py \
     -reducer ./reduce0.py
