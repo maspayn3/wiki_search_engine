@@ -2,7 +2,7 @@
 env/
 
 # settings
-.vscode/settings.json
+.vscode*
 
 # data files
 wiki_num_token.txt

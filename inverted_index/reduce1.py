@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import sys
 import itertools
 import csv
@@ -19,7 +21,6 @@ def main():
     # user itertools.groupby to group input by {WORD DOC_ID} key
     for _, group in itertools.groupby(sys.stdin, key):
         reduce1(group)
-
 
 if __name__ == "__main__":
     main()
