@@ -4,7 +4,10 @@ import re
 import time
 import csv
 import random
+import sqlite3
 from bs4 import BeautifulSoup
+
+import database
 
 parser = argparse.ArgumentParser()
 
@@ -91,9 +94,15 @@ def download_wiki_text(randomize_list: bool, clean_text_flag: bool):
     """Scapes initial wiki article for text and links to branch and build data.csv."""
     # planned to keep track of origin article and all 
     # linked articles to create a graph
+    
+    # initialize set pair meant to track previously visited wikis
+    # and wikis visited this script run
+    prev_visited_wikis = set(get_visited_wikis())
+    curr_visited_wiki_names = set()
+    curr_visited_wikis = []
 
     if args.search == None:
-        to_be_scraped = set(['/wiki/Category:Dark matter'])
+        to_be_scraped = set(['/wiki/Italy'])
     
     else:
         to_be_scraped = set([args.search])
@@ -107,7 +116,13 @@ def download_wiki_text(randomize_list: bool, clean_text_flag: bool):
             else:
                 soup = get_article(to_be_scraped.pop())
 
+            # check if current wiki has already been scraped
             title = get_wiki_title(soup)
+            if title in curr_visited_wiki_names or title in prev_visited_wikis:
+                print(f"already visited {title}")
+                print(f"trying again")
+                continue
+            
             text = get_wiki_text(soup)
 
             # clean text for usage in inverted index
@@ -122,13 +137,15 @@ def download_wiki_text(randomize_list: bool, clean_text_flag: bool):
                 writer = csv.writer(file, quoting=csv.QUOTE_ALL)
                 writer.writerows(wiki_data_entry)
 
-                token += 1
+            curr_visited_wikis.append((token, title))
+            curr_visited_wiki_names.add(title)
+            token += 1
 
             # time.sleep(5)
 
     except KeyboardInterrupt:
         print("Ending search")
-
+        store_visited_wikis(curr_visited_wikis)
         with open("wiki_num_token.txt", mode='w') as file:
             file.write(str(token))
 
@@ -156,6 +173,38 @@ def clean_text(text):
 
     return text
 
+
+def store_visited_wikis(visited_wikis: set):
+    """Stores ids and names of all visited wikis during execution."""
+
+    # Establish database connection
+    con = database.get_db()
+    for wiki in visited_wikis:
+        cur = con.execute(
+            "INSERT INTO visited_wikis (doc_id, url) "
+            "VALUES (?, ?) ",
+            (wiki[0], wiki[1], )
+        )
+    con.commit()
+    con.close()
+
+def get_visited_wikis():
+    """Queries database for all previously visited wikis."""    
+    visited_wikis = []
+    con = database.get_db()
+    cur = con.cursor()
+
+    cur.execute(
+        "SELECT url "
+        "FROM visited_wikis"
+    )
+
+    temp = cur.fetchall()
+    for title in temp:
+        visited_wikis.append(title[0])
+    print(visited_wikis)
+
+    return visited_wikis
 
 if __name__ == "__main__":
     print("Press ctrl + c to end search")

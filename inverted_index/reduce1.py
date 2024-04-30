@@ -2,7 +2,6 @@
 
 import sys
 import itertools
-import csv
 
 def reduce1(group):
     """Reduce input one {WORD DOC_ID} group at a time"""

@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Stop on errors
+
+set -Eeuo pipefail
+
+command_error() {
+    echo "Usage: $ create/destroy/dump"
+}
+
+if [ $# -ne 1 ]; then
+    command_error
+    exit 1
+fi
+
+# Parse argument
+
+case $1 in 
+    "create")
+    FILE=var/wiki.sqlite3
+    if [ -d "$FILE" ]; then
+        echo "$FILE already exists"
+    else 
+        sqlite3 var/wiki.sqlite3 < sql/schema.sql
+        sqlite3 var/wiki.sqlite < sql/data.sql
+    fi
+    ;;
+
+    "destroy")
+    rm -rf var/wiki.sqlite3
+    ;;
+
+    "dump")
+    ;;
+
+    *)
+    command_error
+    exit 1
+    ;;
+esac
