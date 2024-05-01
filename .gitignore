@@ -9,3 +9,4 @@ wiki_num_token.txt
 stop_words.txt
 *.csv
 sql/*.sqlite3
+var/
