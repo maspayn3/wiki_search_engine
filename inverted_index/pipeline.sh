@@ -1,13 +1,11 @@
 #!/bin/bash
 
-
-
 # stop on errors
 set -Eeuo pipefail
 
 # run pipeline via bash commands
 cat ./input/data.csv | ./map0.py | sort | ./reduce0.py
-cat ./input/data.csv | ./map1.py | sort | ./reduce1.py
+cat ./input/data.csv | ./map1.py | sort | ./reduce1.py | ./map2.py | sort | ./reduce2.py
 
 # # Hadoop pipeline program -> chaining MapReduce jobs
 # # jar index/hadoop/hadoop-streaming-{VERSION}.jar

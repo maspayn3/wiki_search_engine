@@ -9,7 +9,7 @@ Description: Uses starting wiki as a launch point to collect all the text and li
 
 Questionable implementation: To counteract possibly visited the same article twice, after every script run, upon a keyboard interrupt (CTRL + C), a database is populated in /var/wiki.sqlite3 with every wiki page scraped in this script run. Once the script runs again, it will check for this database and bring the list of visited articles into memory for this run.  
 
-!!! MUST RUN ./bin/wikidb create to initialize database before any script runs !!!  
+!!! MUST RUN `$ ./bin/wikidb` create to initialize database before any script runs !!!  
 
 Use `$ chmod +x /bin/wikidb` to add executable bit to db script
 
