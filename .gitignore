@@ -1,5 +1,6 @@
 # environment files
 env/
+__pycache__/
 
 # settings
 vscode*

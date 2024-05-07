@@ -1,4 +1,4 @@
 import itertools
 
 def keyfunc(line):
-    return line.partion('\t')[0]
+    return line.partition('\t')[0]

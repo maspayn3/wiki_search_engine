@@ -5,7 +5,9 @@ set -Eeuo pipefail
 
 # run pipeline via bash commands
 cat ./input/data.csv | ./map0.py | sort | ./reduce0.py
-cat ./input/data.csv | ./map1.py | sort | ./reduce1.py | ./map2.py | sort | ./reduce2.py
+cat ./input/data.csv | ./map1.py | sort | ./reduce1.py | ./map2.py | sort | ./reduce2.py | \
+                       ./map3.py | sort | ./reduce3.py | ./map4.py | sort | ./reduce4.py | \
+                       ./map5.py | sort | ./reduce5.py
 
 # # Hadoop pipeline program -> chaining MapReduce jobs
 # # jar index/hadoop/hadoop-streaming-{VERSION}.jar
