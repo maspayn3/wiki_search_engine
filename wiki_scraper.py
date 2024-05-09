@@ -61,8 +61,8 @@ def get_links_from_article(soup: BeautifulSoup):
         if temp.startswith("File:"):
             continue
 
-        # elif temp.startswith("Category:"):
-        #     continue
+        elif temp.startswith("Category:"):
+            continue
         
         elif temp.startswith("User:"):
             continue
@@ -71,6 +71,9 @@ def get_links_from_article(soup: BeautifulSoup):
             continue
 
         elif temp.startswith("Editing"):
+            continue
+
+        elif temp.startswith("Template"):
             continue
 
         wiki_links_list.append(link['href'])
@@ -87,7 +90,7 @@ def get_article(article_link):
     
     else:
         print(f"Status code: {response.status_code}")
-        exit(1)
+        return None
 
 
 def download_wiki_text(randomize_list: bool, clean_text_flag: bool):
@@ -102,32 +105,36 @@ def download_wiki_text(randomize_list: bool, clean_text_flag: bool):
     curr_visited_wikis = []
 
     if args.search == None:
-        to_be_scraped = set(['/wiki/Italy'])
+        # to_be_scraped = set(['/wiki/Dune_(novel)'])
+        to_be_scraped = set(['/wiki/Isaac_Asimov'])
     
     else:
         to_be_scraped = set([args.search])
-    with open('wiki_num_token.txt', mode='r') as file:
-        token = int(file.readline())
+
+    token = get_wiki_token()
 
     try:
         while to_be_scraped:
             if randomize_list is True:
-                soup = get_article(random.choice(list(to_be_scraped)))
+                random_wiki = random.choice(list(to_be_scraped))
+                soup = get_article(random_wiki)
+                to_be_scraped.remove(random_wiki)
+
             else:
                 soup = get_article(to_be_scraped.pop())
+
+            if soup == None:
+                continue
 
             # check if current wiki has already been scraped
             title = get_wiki_title(soup)
             if title in curr_visited_wiki_names or title in prev_visited_wikis:
-                print(f"already visited {title}")
-                print(f"trying again")
+                print(f"Already visited {title}")
+                print(f"Trying again...")
                 continue
             
             text = get_wiki_text(soup)
-
-            # clean text for usage in inverted index
-            if clean_text_flag is True:
-                text = clean_text(text)
+            store_wiki_summary(token, text)
 
             to_be_scraped.update(get_links_from_article(soup))
             wiki_data_entry = [(token, title, text)]
@@ -146,32 +153,32 @@ def download_wiki_text(randomize_list: bool, clean_text_flag: bool):
     except KeyboardInterrupt:
         print("Ending search")
         store_visited_wikis(curr_visited_wikis)
-        with open("wiki_num_token.txt", mode='w') as file:
-            file.write(str(token))
 
 
-def clean_text(text):
-    """Prepares text for usage in an inverted index."""
-    # removes non alphanumerics and case sensitivity
-    text = re.sub (r"[^a-zA-Z0-9 ]+", "", text)
-    text = text.casefold()
+def get_wiki_token():
+    con = database.get_db()
+    cur = con.execute(
+        "SELECT doc_id FROM visited_wikis "
+        "ORDER BY doc_id DESC LIMIT 1"
+    )
+    token = cur.fetchone()
 
-    # split text into list of whitespace-deliminated words
-    text = text.split()
+    if token == None:
+        return 0
 
-    stop_words = []
-    with open("stop_words.txt", mode='r') as file:
-        # generator expression, reads file line by line and 
-        # does not read entire file into memory
-        for word in (line.strip() for line in file):
-            stop_words.append(word)
+    return token[0] + 1
 
-    for word in text:
-        if word in stop_words:
-            text.remove(word)
-            print(f"removed {word}")
 
-    return text
+def store_wiki_summary(wiki_id, text):
+    summary = text[:200]
+
+    con = database.get_db()
+    cur = con.execute(
+        "INSERT INTO wiki_summaries (doc_id, summary) "
+        "VALUES (?, ?) ",
+        (wiki_id, summary, )
+    )
+    con.commit()
 
 
 def store_visited_wikis(visited_wikis: set):
@@ -181,12 +188,13 @@ def store_visited_wikis(visited_wikis: set):
     con = database.get_db()
     for wiki in visited_wikis:
         cur = con.execute(
-            "INSERT INTO visited_wikis (doc_id, url) "
+            "INSERT INTO visited_wikis (doc_id, title) "
             "VALUES (?, ?) ",
             (wiki[0], wiki[1], )
         )
     con.commit()
     con.close()
+
 
 def get_visited_wikis():
     """Queries database for all previously visited wikis."""    
@@ -195,22 +203,21 @@ def get_visited_wikis():
     cur = con.cursor()
 
     cur.execute(
-        "SELECT url "
+        "SELECT title "
         "FROM visited_wikis"
     )
-
     temp = cur.fetchall()
+
     for title in temp:
         visited_wikis.append(title[0])
-    print(visited_wikis)
 
     return visited_wikis
+
 
 if __name__ == "__main__":
     print("Press ctrl + c to end search")
 
     start_time = time.time()
-    print(args.randomize_search, args.clean_text, args.search)
     download_wiki_text(randomize_list=args.randomize_search, clean_text_flag=args.clean_text)
     end_time = time.time()
 

@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Stop on errors
-
 set -Eeuo pipefail
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 command_error() {
-    echo "Usage: $ create/destroy/dump"
+    echo "Usage: $ create/destroy/reset/dump"
 }
 
 if [ $# -ne 1 ]; then
@@ -30,9 +31,15 @@ case $1 in
     rm -rf var/wiki.sqlite3
     ;;
 
+    "reset")
+    "$SCRIPT_DIR"/wikidb destroy
+    "$SCRIPT_DIR"/wikidb create
+    ;;
+
     "dump")
     ;;
 
+    
     *)
     command_error
     exit 1
