@@ -11,9 +11,8 @@ import database
 
 parser = argparse.ArgumentParser()
 
-# -r -c -s INITIAL_WIKI
+# -r -s INITIAL_WIKI
 parser.add_argument("-r", '--randomize_search', action='store_true')
-parser.add_argument('-c', '--clean_text', action='store_true')
 parser.add_argument('-s', '--search', action='store')
 
 args = parser.parse_args()
@@ -93,7 +92,7 @@ def get_article(article_link):
         return None
 
 
-def download_wiki_text(randomize_list: bool, clean_text_flag: bool):
+def download_wiki_text(randomize_list: bool):
     """Scapes initial wiki article for text and links to branch and build data.csv."""
     # planned to keep track of origin article and all 
     # linked articles to create a graph
@@ -218,7 +217,7 @@ if __name__ == "__main__":
     print("Press ctrl + c to end search")
 
     start_time = time.time()
-    download_wiki_text(randomize_list=args.randomize_search, clean_text_flag=args.clean_text)
+    download_wiki_text(randomize_list=args.randomize_search)
     end_time = time.time()
 
     print("Elapsed time:", end_time - start_time, "seconds")
