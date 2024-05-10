@@ -12,7 +12,9 @@ Questionable implementation: To counteract possibly visited the same article twi
 
 !!! MUST RUN `$ ./bin/wikidb create` to initialize database before any script runs !!!  
 
-Use `$ chmod +x /bin/wikidb` to add executable bit to db script
+Use `$ chmod +x /bin/wikidb` to add executable bit to db script  
+
+#### TODO: speed up search with multi-threading
 
 ## sqlite3 Database  
   Use `$ ./bin/wiki (create|destroy|reset)` to perform actions related to the database
@@ -23,7 +25,6 @@ summaries of the scraped wiki articles.
 
 Script will automatically keep track of visited wikis and store them in this database so long as a keyboard interrupt CTRL + C is used to terminate the program
 
-#### TODO: speed up search with multi-threading
 
 ## Wikipedia Search Engine
 ### Hosted at: 
