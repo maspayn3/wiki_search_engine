@@ -3,6 +3,7 @@ env/
 __pycache__/
 
 # settings
+settings.json
 vscode*
 
 # data files
@@ -16,3 +17,9 @@ var/
 inverted_index/map[2-4]*
 inverted_index/reduce[2-4]*
 inverted_index/output*
+
+# data
+data/
+
+# package files
+wikipedia_search.egg-info/

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+command_error() {
+    echo "Usage: $ inverted_index (run)"
+}
+
+if [ $# -ne 1 ]; then
+    command_error
+    exit 1
+fi
+
+# Parse argument
+
+case $1 in 
+    "run")
+    ${SCRIPT_DIR}/../inverted_index/pipeline.sh
+    ;;
+    
+    *)
+    command_error
+    exit 1
+    ;;
+esac

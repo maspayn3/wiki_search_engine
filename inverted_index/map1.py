@@ -2,6 +2,11 @@
 import sys
 import csv
 import re
+import os
+
+
+sys.path.append(os.path.dirname(__file__))
+
 
 csv.field_size_limit(sys.maxsize)
 
@@ -14,9 +19,8 @@ def clean_text(text):
     # split text into list of whitespace-deliminated words
     text = text.split()
 
-    with open("./stopwords.txt", mode='r', encoding='utf-8') as file:
+    with open("stopwords.txt", mode='r', encoding='utf-8') as file:
         stop_words = [word.strip() for word in file]
-
 
     # remove stop words from body of text
     # for word in text:

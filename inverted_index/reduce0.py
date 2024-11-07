@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 import sys
-import util
+import os
+
+sys.path.append(os.path.dirname(__file__))
 
 def reduce0():
     """Prints the number of documents."""
-    count = sum(1 for _ in sys.stdin)
-    print(f"{count}")
+    try:
+        count = sum(1 for _ in sys.stdin)
+        print(f"{count}")
 
-    return count
+        with open("doc_count.txt", "w") as f:
+            f.write(str(count))
 
-
-def main():
-    count = reduce0()
-
-    with open('doc_count.txt', mode='w', encoding='utf-8') as file:
-        file.write(str(count))
+    except Exception as e:
+        sys.stderr.write(f"Error in reducer: {e}\n")
+        sys.exit(1)
 
 if __name__ == "__main__":
-    main()
+    reduce0()

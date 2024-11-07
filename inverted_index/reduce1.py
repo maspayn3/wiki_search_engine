@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import itertools
-import util
 
 def reduce1(group):
     """Reduce input one {WORD DOC_ID} group at a time"""
@@ -12,10 +11,12 @@ def reduce1(group):
 
     print(f"{word} {doc_id}\t{word_count}")
 
+def keyfunc(line):
+    return line.partition('\t')[0]
 
 def main():
     # user itertools.groupby to group input by {WORD DOC_ID} key
-    for _, group in itertools.groupby(sys.stdin, util.keyfunc):
+    for _, group in itertools.groupby(sys.stdin, keyfunc):
         reduce1(group)
 
 if __name__ == "__main__":

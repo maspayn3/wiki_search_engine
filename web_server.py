@@ -11,6 +11,7 @@ def index():
 @app.route('/api/v1/')
 def get_api():
     """Default api route."""
+
     context = {
         'hits': '/api/v1/hits/',
         'url': '/api/v1/'
@@ -18,3 +19,6 @@ def get_api():
 
     return flask.jsonify(**context), 200
 
+@app.route('/api/v1/hits/', methods=['GET'])
+def get_hits():
+    pass

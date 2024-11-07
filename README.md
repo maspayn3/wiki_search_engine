@@ -1,4 +1,4 @@
-# Wikipedia Based Search Engine + Wikipedia Scraper
+# Wikipedia Search Engine + Wikipedia Scraper
 ## Wikipedia Scraper
 Usage: `$ python3 wiki_scraper.py -r -c -s {STARTING_SEARCH}`  
     `-r, --randomize` [OPTIONAL] randomizes wiki selection in set of wikis to be scraped   

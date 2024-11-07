@@ -74,6 +74,9 @@ def get_links_from_article(soup: BeautifulSoup):
 
         elif temp.startswith("Template"):
             continue
+        
+        elif temp.startswith("Wikipedia:"):
+            continue
 
         wiki_links_list.append(link['href'])
     wiki_links_set.update(wiki_links_list)
@@ -147,7 +150,8 @@ def download_wiki_text(randomize_list: bool):
             curr_visited_wiki_names.add(title)
             token += 1
 
-            # time.sleep(5)
+            # politeness delay 
+            time.sleep(1)
 
     except KeyboardInterrupt:
         print("Ending search")
