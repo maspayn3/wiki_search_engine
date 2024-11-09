@@ -5,7 +5,7 @@ __pycache__/
 # settings
 settings.json
 vscode*
-build*
+build/
 
 # data files
 wiki_num_token.txt
