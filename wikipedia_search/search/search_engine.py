@@ -59,7 +59,7 @@ class SearchEngine:
         return cleaned_terms
     
     @lru_cache(maxsize=500)
-    def search(self, query: str, k: int = 10, strict_match: bool = True):
+    def search(self, query: str, k: int = 10, strict_match: bool = False):
         """
         Search query using vector space model with cosine similarity 
         (https://en.wikipedia.org/wiki/Cosine_similarity)
@@ -86,8 +86,10 @@ class SearchEngine:
                 return []
 
             # find if terms are in the index
-            found_terms = [term for term in query
+            found_terms = [term for term in cleaned_query_terms
                            if term in self.search_index.inverted_index]
+            
+            print(found_terms)
 
             if not found_terms:
                 return []
@@ -117,7 +119,7 @@ class SearchEngine:
         for term in terms:
             if term in self.search_index.inverted_index:
                 doc_ids = {int(doc_entry["doc_id"])
-                           for doc_entry in self.search_index.inverted_index[term]["doc_id"]}
+                           for doc_entry in self.search_index.inverted_index[term]["documents"]}
                 doc_sets.append(doc_ids)
         
         if not doc_sets:
@@ -133,7 +135,7 @@ class SearchEngine:
             if term in self.search_index.inverted_index:
                 # add doc IDs for this term
                 docs = {int(doc_entry["doc_id"]) 
-                       for doc_entry in self.index.inverted_index[term]["documents"]}
+                       for doc_entry in self.search_index.inverted_index[term]["documents"]}
                 docs_union.update(docs)
 
         return docs_union
@@ -175,39 +177,50 @@ class SearchEngine:
         Returns:
             Dictionary mapping document IDs to scores
         """
-
         scores = {}
-
-        query_magnitude = math.sqrt(sum(weight * weight)
-                                    for weight in query_vector.values())
+        
+        # Calculate query magnitude once
+        query_weights = list(query_vector.values())  # Materialize generator
+        query_magnitude = math.sqrt(sum(w * w for w in query_weights))
         
         if query_magnitude == 0:
             return {}
-
+            
         for doc_id in result_docs:
-            # calc doc vector and dot product
-            dot_product = 0
-            doc_magnitude = 0
-
+            dot_product = 0.0
+            doc_weights = []  # Store weights to calculate magnitude
+            
+            # Calculate dot product and collect weights
             for term in terms:
                 if term in self.search_index.inverted_index:
-                   doc_entry = next(
-                        (entry for entry in self.search_index.inverted_index[term]["documents"]
-                         if int(entry["doc_id"]) == doc_id),
-                        None
-                    )
-                   
-                   if doc_entry:
-                        # calc term weight
-                        doc_weight = doc_entry["tfk"] * self.search_index.inverted_index[term]["idf"]
+                    # Find the document entry
+                    doc_entry = None
+                    for entry in self.search_index.inverted_index[term]["documents"]:
+                        if int(entry["doc_id"]) == doc_id:
+                            doc_entry = entry
+                            break
+                            
+                    if doc_entry:
+                        # Calculate term weights
+                        doc_tf = float(doc_entry["tfk"])
+                        doc_idf = float(self.search_index.inverted_index[term]["idf"])
+                        doc_weight = doc_tf * doc_idf
+                        
+                        # Store for magnitude calculation
+                        doc_weights.append(doc_weight)
+                        
+                        # Add to dot product
                         dot_product += query_vector[term] * doc_weight
-                        doc_magnitude += doc_weight * doc_weight
-
-            if doc_magnitude > 0:
-                doc_magnitude = math.sqrt(doc_magnitude)
-                scores[doc_id] = dot_product / (query_magnitude * doc_magnitude)
-
-            return scores
+            
+            # Calculate document magnitude
+            if doc_weights:  # Only if we found matching terms
+                doc_magnitude = math.sqrt(sum(w * w for w in doc_weights))
+                if doc_magnitude > 0:
+                    # Calculate cosine similarity
+                    score = dot_product / (query_magnitude * doc_magnitude)
+                    scores[doc_id] = float(score)  # Ensure float
+        
+        return scores
         
 class SearchMetrics:
     """Track search engine performance metrics."""
