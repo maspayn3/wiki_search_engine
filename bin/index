@@ -1,0 +1,103 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+
+usage() {
+    echo "Usage: $ server (start|stop|restart|status)"
+}
+
+start_server() {
+    # set local multi to first arg of func call
+    local multi=$1
+
+    if [ "$multi" = "true" ]; then
+        echo "Starting multiple index server instances..."
+        
+        # Flask CLI w/ WSGI
+        INDEX_PATH="data/part-000000" flask --app wsgi:app run --host 0.0.0.0 --port 9000 >> var/log/server.log 2>&1 &
+        INDEX_PATH="data/part-000001" flask --app wsgi:app run --host 0.0.0.0 --port 9001 >> var/log/server.log 2>&1 &
+        INDEX_PATH="data/part-000002" flask --app wsgi:app run --host 0.0.0.0 --port 9002 >> var/log/server.log 2>&1 &
+    else
+        echo "Starting single index server..."
+        flask --app wsgi:app run --host 0.0.0.0 --port 5000 >> var/log/server.log 2>&1 &
+    fi
+}
+
+stop_server() {
+    local multi=$1
+
+    # || true prevents error if no instance exists
+    # Always try to kill both single and multi-server processes
+    echo "Stopping all server instances..."
+    pkill -f "flask --app wsgi:app run --host 0.0.0.0 --port 5000" || true
+    pkill -f "flask --app wsgi:app run --host 0.0.0.0 --port 900[0-2]" || true
+}
+
+check_servers() {
+    local pattern="$1"
+    local expected="$2"
+    local msg="$3"
+
+    set +o pipefail
+    local count=$(pgrep -f "$pattern" | wc -l)
+    set -o pipefail
+
+    if [ "$count" -eq "$expected" ]; then
+        echo "${msg} running"
+
+        echo "=== Process Details ==="
+        ps -o pid,ppid,user,%cpu,%mem,start -p $(pgrep -f "$pattern") 2>/dev/null
+        echo "===================="
+
+        return 0
+    elif [ "$count" -eq 0 ]; then
+        echo "${msg} stopped"
+        return 1
+    else
+        echo "Server error: found ${count} processes, expected ${expected}"
+        return 2
+    fi
+}
+
+
+
+server_status() {
+    local multi="$1"
+
+    if [ "$multi" = "true" ]; then
+        check_servers "flask --app wsgi:app run --host 0.0.0.0 --port 900[0-2]" 3 "All server instances"
+    else
+        check_servers "flask --app wsgi:app run --host 0.0.0.0 --port 5000" 1 "Server"
+    fi
+}
+
+
+# Parse argument for MULTI flag
+# ${2:-}
+#   -> accesses second arg ($2)
+#   -> if it is unset or empty; substitutes empty string (:-)
+#   -> common pattern to handle optional flags
+MULTI=false
+if [ "${2:-}" = "--multi" ]; then
+    MULTI=true
+fi
+
+case $1 in 
+    "start")
+    start_server "$MULTI"
+    ;;
+
+
+    "stop")
+    stop_server "$MULTI"
+    ;;
+
+    "status")
+    server_status "$MULTI"
+    ;;
+
+    *)
+    usage
+    exit 1
+    ;;
+esac

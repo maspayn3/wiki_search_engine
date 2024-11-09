@@ -1,11 +1,11 @@
 """API routes for the search engine."""
 import flask
 from flask import Blueprint, jsonify
-from wikipedia_search.search import search_index
+from wikipedia_search.search import index_loader
 
-api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
+bp = Blueprint('api', __name__, url_prefix='/api/v1')
 
-@api_bp.route('/hello')
+@bp.route('/hello')
 def hello():
     """Test endpoint."""
     return flask.jsonify({
@@ -13,7 +13,7 @@ def hello():
         "status": "success"
     })
 
-@api_bp.route('/test-search')
+@bp.route('/test-search')
 def test_search():
     """Test search endpoint."""
     return flask.jsonify({
@@ -24,14 +24,14 @@ def test_search():
         ]
     })
 
-@api_bp.route('/word/<string:word>')
+@bp.route('/word/<string:word>')
 def get_word(word: str):
     """Get index entry for a specific word."""
-    
-    if word in search_index.inverted_index:
+
+    if word in index_loader.search_index.inverted_index:
         return jsonify({
             "word": word,
-            "data": search_index.inverted_index[word]
+            "data": index_loader.search_index.inverted_index[word]
         })
     
     return flask.jsonify({
@@ -39,12 +39,12 @@ def get_word(word: str):
     }), 404
 
 
-@api_bp.route('/stats')
+@bp.route('/stats')
 def get_stats():
     """Get basic statistics about the index."""
-    index = search_index.inverted_index
+    index = index_loader.search_index.inverted_index
     return jsonify({
         "total_words": len(index),
         "sample_words": list(index.keys())[:5],  # First 5 words
-        "stopwords_count": len(search_index.stopwords),
+        "stopwords_count": len(index_loader.search_index.stopwords),
     })

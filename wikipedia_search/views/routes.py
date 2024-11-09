@@ -2,14 +2,14 @@
 from flask import Blueprint, render_template, request, jsonify
 import requests
 
-bp = Blueprint('views', __name__)
+views_bp = Blueprint('views', __name__)
 
-@bp.route('/')
+@views_bp.route('/')
 def index():
     """Home page with API test form."""
     return render_template('test.html')
 
-@bp.route('/test-api', methods=['GET'])
+@views_bp.route('/test-api', methods=['GET'])
 def test_api():
     """Test page for API endpoints."""
     # Get some test data from our API
@@ -19,7 +19,7 @@ def test_api():
         return jsonify(api_response.json())
     return jsonify({"message": "Enter a word to test"})
 
-@bp.route('/stats')
+@views_bp.route('/stats')
 def show_stats():
     """Show index statistics."""
     try:
