@@ -1,10 +1,16 @@
-CREATE TABLE visited_wikis(
-    doc_id integer PRIMARY KEY,
-    title VARCHAR(250)
+CREATE TABLE documents(
+    doc_id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    url TEXT,
+    summary VARCHAR(250)
 );
 
-CREATE TABLE wiki_summaries(
-    doc_id integer PRIMARY KEY,
-    summary VARCHAR(200),
-    FOREIGN KEY (doc_id) REFERENCES visited_wikis (doc_id)
+-- Create index for title searches and URL lookups
+CREATE INDEX idx_documents_title ON documents(title);
+CREATE INDEX idx_documents_url ON documents(url);
+
+CREATE TABLE document_content(
+    doc_id INTEGER PRIMARY KEY,
+    content TEXT NOT NULL,
+    FOREIGN KEY (doc_id) REFERENCES documents(doc_id)
 )

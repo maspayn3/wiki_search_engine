@@ -6,18 +6,21 @@ set -Eeuo pipefail
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 command_error() {
-    echo "Usage: $ create/destroy/reset/dump"
+    echo "Usage: $0 create|destroy|reset|dump [output_file]"
+    echo "  dump: outputs database content (to stdout or specified file)"
 }
 
-if [ $# -ne 1 ]; then
+if [ $# -eq 0 ] || [ $# -gt 2 ]; then
     command_error
     exit 1
 fi
 
-# Parse argument
+reset() {
+    "$SCRIPT_DIR"/wikidb destroy
+    "$SCRIPT_DIR"/wikidb create 
+}
 
-case $1 in 
-    "create")
+create() {
     FILE=var/wiki.sqlite3
     if [ -d "$FILE" ]; then
         echo "$FILE already exists"
@@ -25,18 +28,40 @@ case $1 in
         sqlite3 var/wiki.sqlite3 < sql/schema.sql
         sqlite3 var/wiki.sqlite < sql/data.sql
     fi
+}
+
+dump() {
+    local db_file="var/wiki.sqlite3"
+    local output_file="$2"
+
+    if [ $# -eq 1]; then
+        sqlite3 "$db_file" ".dump"
+    else
+        sqlite3 "$db_file" ".dump" > "$1"
+        ehco "Database dumped to $1"
+    fi
+}
+
+# Parse argument
+case $1 in 
+    "create")
+        create
     ;;
 
     "destroy")
-    rm -rf var/wiki.sqlite3
+        rm -rf var/wiki.sqlite3
     ;;
 
     "reset")
-    "$SCRIPT_DIR"/wikidb destroy
-    "$SCRIPT_DIR"/wikidb create
+        reset
     ;;
 
     "dump")
+        if [ $# -eq 2 ]; then
+            dump "$2"
+        else
+            dump
+        fi
     ;;
 
     

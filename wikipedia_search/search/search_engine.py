@@ -59,7 +59,7 @@ class SearchEngine:
         return cleaned_terms
     
     @lru_cache(maxsize=500)
-    def search(self, query: str, k: int = 10, strict_match: bool = False):
+    def search(self, query: str, k: int = 10, strict_match: bool = True):
         """
         Search query using vector space model with cosine similarity 
         (https://en.wikipedia.org/wiki/Cosine_similarity)

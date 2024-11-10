@@ -48,7 +48,7 @@ def get_hits():
         
         # set optional parameters
         k = request.args.get('k', default=10, type=int)
-        strict = request.args.get('strict', default=False, type=bool)
+        strict = request.args.get('strict', default=True, type=bool)
 
         # use search engine to search query
         search_results = search_engine.search(query, k=k, strict_match=strict)
