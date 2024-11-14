@@ -16,10 +16,6 @@ class WikiScraper:
         self.seen_links = set()
         self.visited_titles = set()
 
-    def get_db(self):
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
-        return conn
     
     def get_wiki_text(self, soup: BeautifulSoup):
         """Extracts body of text from a wikipedia article."""
@@ -46,27 +42,25 @@ class WikiScraper:
 
     def store_article(self, doc_id, title, url, content, summary) -> bool:
         """Store article data in var/wiki.sqlite3."""
-        conn = self.get_db()
-        try:
-            # store document metadata
-            conn.execute(
-                "INSERT INTO documents (doc_id, title, url, summary) "
-                "VALUES (?, ?, ?, ?)", (doc_id, title, url, summary)
-            )
+        with database.get_db() as conn:
+            try:
+                # store document metadata
+                conn.execute(
+                    "INSERT INTO documents (doc_id, title, url, summary) "
+                    "VALUES (?, ?, ?, ?)", (doc_id, title, url, summary)
+                )
 
-            # store document body text
-            conn.execute(
-                "INSERT INTO document_content (doc_id, content) "
-                "VALUES (?, ?)", (doc_id, content)
-            )
-            conn.commit()
-            return True
-        except sqlite3.Error as e:
-            print(f"Error storing article: {e}")
-            conn.rollback()
-            return False
-        finally:
-            conn.close()
+                # store document body text
+                conn.execute(
+                    "INSERT INTO document_content (doc_id, content) "
+                    "VALUES (?, ?)", (doc_id, content)
+                )
+                conn.commit()
+                return True
+            except sqlite3.Error as e:
+                print(f"Error storing article: {e}")
+                conn.rollback()
+                return False
 
     def get_links_from_article(self, soup: BeautifulSoup):
         """Collects all links to other wikipedia articles from a single wiki article."""
@@ -94,12 +88,11 @@ class WikiScraper:
         return links
 
     def load_visited_titles(self):
-        conn = self.get_db()
-        cur = conn.execute(
-            "SELECT title FROM documents"
-        )
-        self.visited_titles = {row['title'] for row in cur.fetchall()}
-        conn.close()
+        with database.get_db() as conn:
+            cur = conn.execute(
+                "SELECT title FROM documents"
+            )
+            self.visited_titles = {row['title'] for row in cur.fetchall()}
 
     def scrape_wikipedia(self,start_url: str="/wiki/Dune_(novel)", randomize: bool=False):
         """Scapes initial wiki article for text and links to branch and build data.csv."""
@@ -187,58 +180,12 @@ class WikiScraper:
 
     def get_wiki_token(self):
         """Get next available document ID."""
-        conn = database.get_db()
-        cur = conn.execute(
-            "SELECT MAX(doc_id) FROM documents "
-            )
-        max_id = cur.fetchone()[0]
-        conn.close()
+        with database.get_db() as conn:
+            cur = conn.execute(
+                "SELECT MAX(doc_id) FROM documents "
+                )
+            max_id = cur.fetchone()[0]
         return (max_id or 0) + 1
-
-
-    def store_wiki_summary(self, wiki_id, text):
-        summary = text[:200]
-
-        con = database.get_db()
-        cur = con.execute(
-            "INSERT INTO wiki_summaries (doc_id, summary) "
-            "VALUES (?, ?) ",
-            (wiki_id, summary, )
-        )
-        con.commit()
-
-
-    def store_visited_wikis(self, visited_wikis: set):
-        """Stores ids and names of all visited wikis during execution."""
-
-        # Establish database connection
-        con = database.get_db()
-        for wiki in visited_wikis:
-            cur = con.execute(
-                "INSERT INTO visited_wikis (doc_id, title) "
-                "VALUES (?, ?) ",
-                (wiki[0], wiki[1], )
-            )
-        con.commit()
-        con.close()
-
-
-    def get_visited_wikis():
-        """Queries database for all previously visited wikis."""    
-        visited_wikis = []
-        con = database.get_db()
-        cur = con.cursor()
-
-        cur.execute(
-            "SELECT title "
-            "FROM visited_wikis"
-        )
-        temp = cur.fetchall()
-
-        for title in temp:
-            visited_wikis.append(title[0])
-
-        return visited_wikis
 
 
 parser = argparse.ArgumentParser()

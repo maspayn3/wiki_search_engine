@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wiki Search</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Wiki Search</h1>
+            <p class="subtitle">Search through Wikipedia articles</p>
+        </header>
+
+        <main>
+            <form id="searchForm" class="search-form">
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        name="q" 
+                        placeholder="Enter your search query..."
+                        required
+                    >
+                    <button type="submit">Search</button>
+                </div>
+                <div class="search-options">
+                    <label>
+                        <input type="checkbox" name="strict" checked> 
+                        Strict matching
+                    </label>
+                    <select name="k" id="resultCount">
+                        <option value="10">10 results</option>
+                        <option value="20">20 results</option>
+                        <option value="50">50 results</option>
+                    </select>
+                </div>
+            </form>
+
+            <div id="results" class="results-container">
+                <div id="loading" class="loading" style="display: none;">
+                    Searching...
+                </div>
+                <div id="error" class="error" style="display: none;"></div>
+                <div id="resultsList"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Results powered by TF-IDF ranking</p>
+        </footer>
+    </div>
+
+    <script>
+        // This runs when the page first loads
+        console.log('Page loaded - setting up event listener');
+
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            // These lines run when form is submitted
+            console.log('Form submitted!');
+            e.preventDefault();
+            
+            const form = e.target;
+            const resultsDiv = document.getElementById('resultsList');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            
+            console.log('Clearing previous results and showing loading state');
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            resultsDiv.innerHTML = '';
+            
+            try {
+                console.log('Building search query with params:', {
+                    q: form.q.value,
+                    strict: form.strict.checked,
+                    k: form.k.value
+                });
+
+                // Build query params
+                const params = new URLSearchParams({
+                    q: form.q.value,
+                    strict: form.strict.checked,
+                    k: form.k.value
+                });
+                
+                console.log('Making API request to /api/v1/hits/');
+                const response = await fetch(`/api/v1/hits/?${params}`);
+                const data = await response.json();
+                
+                console.log('Received response:', data);
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Search failed');
+                }
+                
+                console.log('Processing and displaying results');
+                // Display results
+                if (data.results.length === 0) {
+                    console.log('No results found');
+                    resultsDiv.innerHTML = '<p class="no-results">No results found</p>';
+                } else {
+                    console.log(`Found ${data.results.length} results`);
+                    const resultHtml = data.results.map(result => `
+                        <div class="result-item">
+                            <h3>${result.title || `Document ${result.doc_id}`}</h3>
+                            <p class="result-summary">${result.summary || 'No summary available'}</p>
+                            <div class="result-meta">
+                                <span class="score">Score: ${result.score.toFixed(4)}</span>
+                                <span class="doc-id">ID: ${result.doc_id}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    resultsDiv.innerHTML = resultHtml;
+                }
+            } catch (err) {
+                console.error('Search error:', err);
+                error.textContent = err.message;
+                error.style.display = 'block';
+            } finally {
+                console.log('Search complete, hiding loading state');
+                loading.style.display = 'none';
+            }
+        });
+
+        // This also runs when page loads
+        console.log('Setup complete - ready for searches');
+    </script>
+</body>
+</html>

@@ -7,6 +7,10 @@ class Config:
     "Base configuration."
 
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev')
+    
+    DATABASE_PATH = os.path.join(BASE_DIR, '..', 'var', 'wiki.sqlite3')
+    DATABASE_POOL_SIZE = 10
+    DATABASE_TIMEOUT = 30
 
     INDEX_PATH = os.path.join(BASE_DIR, '../data/')
     STOPWORDS_PATH = os.path.join(BASE_DIR, '../data/stop_words.txt')

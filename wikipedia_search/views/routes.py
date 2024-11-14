@@ -7,7 +7,7 @@ views_bp = Blueprint('views', __name__)
 @views_bp.route('/')
 def index():
     """Home page with API test form."""
-    return render_template('test.html')
+    return render_template('index.html')
 
 @views_bp.route('/test-api', methods=['GET'])
 def test_api():

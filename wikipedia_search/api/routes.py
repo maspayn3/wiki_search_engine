@@ -2,8 +2,50 @@
 import flask
 from flask import Blueprint, jsonify, request
 from wikipedia_search.search import search_index, search_engine
+from database import get_db
+from typing import List, Tuple
 
 api_bp = Blueprint('api', __name__, url_prefix='/api/v1')
+
+def enhance_search_results(results: List[Tuple[int, float]]) -> List[dict]:
+    """
+    Enhance search results with document information from database.
+    
+    Args:
+        results: List of (doc_id, score) tuples from search engine
+        
+    Returns:
+        List of dictionaries containing enhanced result information
+    """
+    enhanced_results = []
+    
+    try:
+        with get_db() as conn:
+            for doc_id, score in results:
+                # Get document metadata
+                cur = conn.execute(
+                    """
+                    SELECT title, summary 
+                    FROM documents 
+                    WHERE doc_id = ?
+                    """, 
+                    (doc_id,)
+                )
+                doc = cur.fetchone()
+                if doc:
+                    enhanced_results.append({
+                        "doc_id": doc_id,
+                        "score": float(score),
+                        "title": doc['title'],
+                        "summary": doc['summary'] or "No summary available"
+                    })
+
+    except Exception as e:
+        print(f"Error enhancing results: {str(e)}")
+        # Re-raise to be handled by the route
+        raise
+        
+    return enhanced_results
 
 @api_bp.route('/hello')
 def hello():
@@ -11,17 +53,6 @@ def hello():
     return flask.jsonify({
         "message": "Hello from API!",
         "status": "success"
-    })
-
-@api_bp.route('/test-search/', methods=['GET'])
-def test_search():
-    """Test search endpoint."""
-    return flask.jsonify({
-        "query": "test",
-        "hits": [
-            {"doc_id": "1", "score": 0.9},
-            {"doc_id": "2", "score": 0.7}
-        ]
     })
 
 @api_bp.route('/word/<string:word>/', methods=['GET'])
@@ -52,20 +83,14 @@ def get_hits():
 
         # use search engine to search query
         search_results = search_engine.search(query, k=k, strict_match=strict)
-        print(search_results)
+        # print(search_results)
 
-        results_formmated =[
-            {
-                "doc_id": doc_id,
-                "score": float(score)
-            }
-            for doc_id, score in search_results
-        ]
+        enhanced_results = enhance_search_results(search_results)
 
         return jsonify({
             "query": query,
-            "num_results": len(results_formmated),
-            "results": results_formmated,
+            "num_results": len(enhanced_results),
+            "results": enhanced_results,
             "strict_match": strict
         })
 

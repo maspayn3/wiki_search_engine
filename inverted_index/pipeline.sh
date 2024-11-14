@@ -26,11 +26,7 @@ BASE_HDFS_PATH="/user/maspayne"
 
 # start-all.sh
 # jps - checks to see if processes are running
-
-# setup local host first
-# ???
-
-# start-all.sh
+# $ ./ pipeline.sh
 
 # # rid of previous output directories
 rm -rf output output[0-9] || true

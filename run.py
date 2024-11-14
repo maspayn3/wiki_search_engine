@@ -10,7 +10,7 @@ def run_server(port, host, index_path):
     app = create_app('development')
     if index_path:
         app.config['INDEX_PATH'] = index_path
-    app.run(host=host, port=port, debug=True)
+    app.run(host=host, port=port, debug=False)
 
 if __name__ == '__main__':
     run_server()
