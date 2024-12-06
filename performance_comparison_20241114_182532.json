@@ -1,0 +1,50 @@
+{
+  "pooled": {
+    "implementation": "connection_pool",
+    "total_queries": 10000,
+    "total_errors": 0,
+    "error_rate": 0.0,
+    "avg_query_time_ms": 0.0046338319778442385,
+    "median_query_time_ms": 0.0045299530029296875,
+    "p95_query_time_ms": 0.0050067901611328125,
+    "min_query_time_ms": 0.0040531158447265625,
+    "max_query_time_ms": 0.030279159545898438,
+    "total_duration_seconds": 0.051355
+  },
+  "non_pooled": {
+    "implementation": "simple_connection",
+    "total_queries": 10000,
+    "total_errors": 0,
+    "error_rate": 0.0,
+    "avg_query_time_ms": 0.06766324043273926,
+    "median_query_time_ms": 0.06532669067382812,
+    "p95_query_time_ms": 0.08034706115722656,
+    "min_query_time_ms": 0.06222724914550781,
+    "max_query_time_ms": 0.30303001403808594,
+    "total_duration_seconds": 0.688455
+  },
+  "improvement": {
+    "avg_query_time_percent": 93.15162568595794,
+    "error_rate_percent": 0.0
+  },
+  "pool_info": {
+    "max_connections": 10,
+    "active_connections": 1
+  },
+  "test_info": {
+    "queries_per_implementation": 1000,
+    "timestamp": "2024-11-14T18:25:32.311570",
+    "doc_ids_tested": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ]
+  }
+}

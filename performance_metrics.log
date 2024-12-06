@@ -1,0 +1,22 @@
+2024-11-14 18:25:31,125 - INFO - Initializing test Flask app and database pool...
+2024-11-14 18:25:31,126 - INFO - 
+Starting connection_pool test:
+2024-11-14 18:25:31,126 - INFO - Target operations: 1000
+2024-11-14 18:25:31,131 - INFO - 
+Starting simple_connection test:
+2024-11-14 18:25:31,131 - INFO - Target operations: 1000
+2024-11-14 18:25:31,202 - INFO - Performance comparison completed and saved to performance_comparison_20241114_182531.json
+2024-11-14 18:25:31,202 - INFO - 
+Starting connection_pool test:
+2024-11-14 18:25:31,202 - INFO - Target operations: 5000
+2024-11-14 18:25:31,228 - INFO - 
+Starting simple_connection test:
+2024-11-14 18:25:31,228 - INFO - Target operations: 5000
+2024-11-14 18:25:31,571 - INFO - Performance comparison completed and saved to performance_comparison_20241114_182531.json
+2024-11-14 18:25:31,571 - INFO - 
+Starting connection_pool test:
+2024-11-14 18:25:31,571 - INFO - Target operations: 10000
+2024-11-14 18:25:31,623 - INFO - 
+Starting simple_connection test:
+2024-11-14 18:25:31,623 - INFO - Target operations: 10000
+2024-11-14 18:25:32,311 - INFO - Performance comparison completed and saved to performance_comparison_20241114_182532.json

@@ -21,6 +21,8 @@ inverted_index/map[2-4]*
 inverted_index/reduce[2-4]*
 inverted_index/output*
 
+wikipedia_search/package-lock.json
+
 # data
 data/
 
