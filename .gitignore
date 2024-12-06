@@ -1,30 +1,88 @@
-# environment files
+# Python
 env/
-__pycache__/
+venv/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.coverage
+htmlcov/
 
-# settings
-settings.json
-vscode*
+# IDE/Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build/Distribution
 build/
-build/lib
+dist/
+*.egg-info/
+*.egg
 
-
-# data files
+# Project specific data
 wiki_num_token.txt
 stop_words.txt
 *.csv
 sql/*.sqlite3
 var/
-
-# pipeline files
-inverted_index/map[2-4]*
-inverted_index/reduce[2-4]*
-inverted_index/output*
-
-wikipedia_search/package-lock.json
-
-# data
 data/
+inverted_index/map[0-9]*.py
+inverted_index/reduce[0-9]*.py
+inverted_index/output*/
+inverted_index/output*
+inverted_index/doc_count.txt
 
-# package files
-wikipedia_search.egg-info/
+# Logs
+*.log
+var/log/
+
+# Client/Frontend
+client/node_modules/
+client/dist/
+client/.env
+client/.env.*
+client/coverage/
+client/build/
+client/.vite/
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/.pnpm-debug.log*
+client/.DS_Store
+client/logs
+client/*.local
+
+# Other JavaScript/Node
+node_modules/
+**/node_modules/
+npm-debug.log
+package-lock.json
+.npm
+
+# Environment variables
+.env
+.env.*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+/coverage
+/.nyc_output
+
+# Editor directories and files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
