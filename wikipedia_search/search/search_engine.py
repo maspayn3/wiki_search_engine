@@ -17,8 +17,7 @@ class SearchEngine:
     def __init__(self, index: SearchIndex):
         self.search_index = index
         self.stopwords = set()
-        self.doc_lengths = {}
-        self.total_docs = 0
+        self._doc_magnitudes = {}
         self.metrics = SearchMetrics()
 
         # doc id -> title
@@ -33,8 +32,28 @@ class SearchEngine:
             format='%(asctime)s - %(levelname)s - %(message)s'
         )
 
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(__name__)        
+        self.search_index.on_index_loaded = self._init_doc_magnitudes
+
+        print(f"Number of documents with magnitudes: {len(self._doc_magnitudes)}")
+
+
+    def _init_doc_magnitudes(self):
+        """Pre-calculate document magnitudes for fast scoring"""
         self._load_titles()
+
+        for term, term_data in self.search_index.inverted_index.items():
+            for doc in term_data["documents"]:
+                doc_id = int(doc["doc_id"])
+                if doc_id not in self._doc_magnitudes:
+                    self._doc_magnitudes[doc_id] = 0.0
+                weight = float(doc["tfk"]) * float(term_data["idf"])
+                self._doc_magnitudes[doc_id] += weight * weight
+        
+        for doc_id in self._doc_magnitudes:
+            self._doc_magnitudes[doc_id] = math.sqrt(self._doc_magnitudes[doc_id])
+        
+        print(f"init doc maginitudes finished, size: {len(self._doc_magnitudes)}")
 
     def _load_titles(self):
         try:
@@ -90,7 +109,7 @@ class SearchEngine:
                          if term not in self.search_index.stopwords]
         return cleaned_terms
     
-    @lru_cache(maxsize=500)
+    @lru_cache(maxsize=1000)
     def search(self, query: str, k: int = 10, strict_match: bool = True):
         """
         Search query using vector space model with cosine similarity 
@@ -110,8 +129,12 @@ class SearchEngine:
         Returns:
             List of (doc_id, score) pairs
         """
+        cache_info = self.search.cache_info()
+        if cache_info.hits > self.metrics.cache_hits:
+            self.metrics.record_cache_hit()
+
+        start_time = time.time()
         try:
-            self.metrics.total_searches += 1
             cleaned_query_terms = self.clean_query(query)
             
             if not cleaned_query_terms:
@@ -120,44 +143,64 @@ class SearchEngine:
             # find which terms if any are in the index
             found_terms = [term for term in cleaned_query_terms
                            if term in self.search_index.inverted_index]
-            
-            print(found_terms)
 
             if not found_terms:
                 return []
 
+            print(found_terms)
+
             if strict_match:
                 # get docs which contain all the search terms
                 found_docs = self._find_intersection(found_terms)
-                if not found_docs:
-                    return []
             else:
                 # get all docs containing any query term
                 found_docs = self._find_union(found_terms)
             
+            if not found_docs:
+                return []
+            
             query_vector = self._calc_query_vector(found_terms)
-            results = self._calculate_scores(found_docs, found_terms, query_vector)
+            query_magnitude = math.sqrt(sum(w * w for w in query_vector.values()))
+            print(f"Query vector: {query_vector}")  # Debug
+            print(f"Query magnitude: {query_magnitude}")  # Debug
+
+            if query_magnitude == 0:
+                return []
+
+            results = self._calculate_scores(found_docs, found_terms, query_vector, query_magnitude)
 
             # Return top k results
-            return sorted(results.items(), key=lambda x: x[1], reverse=True)[:k]
+            sorted_results = sorted(results.items(), key=lambda x: x[1], reverse=True)[:k]
+
+            search_time = time.time() - start_time
+            self.metrics.record_search_time(search_time, len(sorted_results))
+
+            return sorted_results
 
         except Exception as e:
             self.logger.error(f"Search error: {str(e)}")
             raise
 
     def _find_intersection(self, terms):
-        doc_sets = []
-
-        for term in terms:
-            doc_ids = {int(doc_entry["doc_id"])
-                        for doc_entry in self.search_index.inverted_index[term]["documents"]}
-            doc_sets.append(doc_ids)
+        """More efficient intersection by starting with shortest posting list"""
+        # Get posting lists with lengths
+        term_docs = [(term, {int(doc["doc_id"]) 
+                    for doc in self.search_index.inverted_index[term]["documents"]})
+                    for term in terms]
         
-        if not doc_sets:
+        # Sort by posting list length
+        term_docs.sort(key=lambda x: len(x[1]))
+        
+        if not term_docs:
             return set()
-        
-        # find intersection of all the sets in document
-        return set.intersection(*doc_sets)
+            
+        result = term_docs[0][1]
+        for _, docs in term_docs[1:]:
+            result &= docs
+            if not result:  # Early exit if empty
+                break
+                
+        return result
 
     def _find_union(self, terms):
         docs_union = set()
@@ -193,101 +236,91 @@ class SearchEngine:
         return query_vector
 
 
-    def _calculate_scores(self, 
-                          result_docs: Set[int], 
-                          found_terms: List[str], 
-                          query_vector: Dict[str, float]):
-        """
-        Calculate cosine similarity scores for term matching documents.
-        
-        Args:
-            matching_docs: Set of document IDs to score
-            query_terms: List of query terms
-            query_vector: Query term weights
+    def _calculate_scores(self, result_docs, found_terms, query_vector, query_magnitude):
+        """More efficient batch scoring"""
+        try:
+            scores = {doc_id: 0.0 for doc_id in result_docs}
+            title_exact_boost = 10
+            title_boost = 2
             
-        Returns:
-            Dictionary mapping document IDs to scores
-        """
-        scores = {}
-        title_exact_boost = 10
-        title_boost = 2
-        
-        # Calculate query magnitude once
-        query_weights = list(query_vector.values())  # Materialize generator
-        query_magnitude = math.sqrt(sum(w * w for w in query_weights))
-        
-        if query_magnitude == 0:
-            return {}
+            # Pre-calculate title matches
+            title_matches = {
+                doc_id: set(term for term in found_terms 
+                        if self._is_term_in_title(doc_id, term))
+                for doc_id in result_docs
+            }
             
-        for doc_id in result_docs:
-            dot_product = 0.0
-            doc_weights = []  # Store weights to calculate magnitude
-            
-            title_matching_terms = set(
-                term for term in found_terms 
-                if self._is_term_in_title(doc_id, term)
-            )
-
-
-            # Calculate dot product and collect weights
+            # Calculate dot products in batch
             for term in found_terms:
-                # Find the document entry
-                doc_entry = None
-                for entry in self.search_index.inverted_index[term]["documents"]:
-                    if int(entry["doc_id"]) == doc_id:
-                        doc_entry = entry
-                        break
-                        
-                if doc_entry:
-                    # Calculate term weights
-                    doc_tf = float(doc_entry["tfk"])
-                    doc_idf = float(self.search_index.inverted_index[term]["idf"])
-                    doc_weight = doc_tf * doc_idf
+                term_data = self.search_index.inverted_index[term]
+                query_weight = query_vector[term]
+                
+                for doc_entry in term_data["documents"]:
+                    doc_id = int(doc_entry["doc_id"])
+                    if doc_id in result_docs:
+                        weight = float(doc_entry["tfk"]) * float(term_data["idf"])
+                        scores[doc_id] += query_weight * weight
+                        print(f"Score update for doc {doc_id}: {scores[doc_id]}")  # Debug
+            
+            # Normalize and apply boosts
+            final_scores = {}
+            for doc_id, score in scores.items():
+                if score > 0:
+                    # Use pre-calculated magnitude
+                    base_score = score / (query_magnitude * self._doc_magnitudes[doc_id])
                     
-                    # Store for magnitude calculation
-                    doc_weights.append(doc_weight)
-                    
-                    # Add to dot product
-                    dot_product += query_vector[term] * doc_weight
-        
-            # Calculate document magnitude
-            if doc_weights:  # Only if we found matching terms
-                doc_magnitude = math.sqrt(sum(w * w for w in doc_weights))
-                if doc_magnitude > 0:
-                    # Calculate cosine similarity
-                    base_score = float(dot_product / (query_magnitude * doc_magnitude))
-
+                    # Apply title boost
+                    title_matching_terms = title_matches[doc_id]
                     if len(title_matching_terms) == len(found_terms):
                         final_score = base_score * title_exact_boost
                     elif title_matching_terms:
                         final_score = base_score * title_boost
                     else:
                         final_score = base_score
+                        
+                    final_scores[doc_id] = float((math.tanh(final_score) + 1) / 2)
+                    print(f"Final score for doc {doc_id}: {final_scores[doc_id]}")
+            
+            return final_scores
+        except Exception as e:
+            print(f"Scoring error: {str(e)}")
+            raise
 
-                    normalized_score = math.tanh(final_score)
-                    scores[doc_id] = float((normalized_score + 1) / 2)  # Ensure float
-        
-        return scores
-        
+
 class SearchMetrics:
     """Track search engine performance metrics."""
     def __init__(self):
-        self.search_times = []
-        self.total_searches = 0
-        self.cache_hits = 0
-        self.last_load_time = 0.0
-
-    def record_search_time(self, time: float) -> None:
-        self.search_times.append(time)
+        self.search_times = []  # Store time taken for each search
+        self.total_searches = 0  # Total number of searches performed
+        self.cache_hits = 0      # Number of cache hits
+        self.last_load_time = 0.0  # Time taken to load index
+        self.result_counts = []  # Number of results per search
+        self.most_recent_search_time = 0.0
+        
+    def record_search_time(self, time_taken: float, num_results: int) -> None:
+        """Record the time taken for a search and number of results."""
+        self.search_times.append(time_taken)
         self.total_searches += 1
+        self.result_counts.append(num_results)
+        self.most_recent_search_time = time_taken
 
     def record_cache_hit(self) -> None:
+        """Record when a search result comes from cache."""
         self.cache_hits += 1
 
-    def record_load_time(self, time: float) -> None:
-        self.last_load_time = time
-
-    def average_search_time(self) -> float:
+    def get_stats(self) -> Dict:
+        """Get performance statistics."""
         if not self.search_times:
-            return 0.0
-        return sum(self.search_times) / len(self.search_times)
+            return {
+                "total_searches": 0,
+                "avg_search_time": 0,
+                "cache_hit_rate": 0,
+                "avg_results": 0
+            }
+            
+        return {
+            "total_searches": self.total_searches,
+            "avg_search_time": sum(self.search_times) / len(self.search_times),
+            "cache_hit_rate": self.cache_hits / self.total_searches,
+            "avg_results": sum(self.result_counts) / len(self.result_counts)
+        }

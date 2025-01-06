@@ -8,6 +8,7 @@ class SearchIndex:
         self.stopwords = set()
         self.doc_lengths = {}
         self.total_docs = 0
+        self.on_index_loaded = None
 
         logging.basicConfig(
             filename='var/log/index_loader.log',
@@ -36,6 +37,9 @@ class SearchIndex:
                 if not os.path.exists(part):
                     raise FileNotFoundError(f"Index part not found: {part}")
                 self._load_index_part(part)
+
+            if self.on_index_loaded:
+                self.on_index_loaded()
 
         except Exception as e:
             self.logger.error(f"Error loading index: {str(e)}")

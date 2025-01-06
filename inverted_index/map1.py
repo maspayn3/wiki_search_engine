@@ -3,7 +3,15 @@ import sys
 import csv
 import re
 import os
+import logging
 
+logging.basicConfig(
+    filename='index_performance.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    force=True
+)
+logging.info(f"Starting {os.path.basename(__file__)}")
 
 sys.path.append(os.path.dirname(__file__))
 
@@ -46,3 +54,5 @@ def map1():
 
 if __name__ == "__main__":
     map1()
+    # At the end of the main processing
+    logging.info(f"Completed {os.path.basename(__file__)}")

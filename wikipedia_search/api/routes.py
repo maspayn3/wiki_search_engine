@@ -18,14 +18,13 @@ def enhance_search_results(results: List[Tuple[int, float]]) -> List[dict]:
         List of dictionaries containing enhanced result information
     """
     enhanced_results = []
-    
     try:
         with get_db() as conn:
             for doc_id, score in results:
                 # Get document metadata
                 cur = conn.execute(
                     """
-                    SELECT title, summary 
+                    SELECT title, summary, url
                     FROM documents 
                     WHERE doc_id = ?
                     """, 
@@ -37,7 +36,8 @@ def enhance_search_results(results: List[Tuple[int, float]]) -> List[dict]:
                         "doc_id": doc_id,
                         "score": float(score),
                         "title": doc['title'],
-                        "summary": doc['summary'] or "No summary available"
+                        "summary": doc['summary'] or "No summary available",
+                        "url": doc['url']
                     })
 
     except Exception as e:
@@ -91,7 +91,8 @@ def get_hits():
             "query": query,
             "num_results": len(enhanced_results),
             "results": enhanced_results,
-            "strict_match": strict
+            "strict_match": strict,
+            "search_time" : search_engine.metrics.most_recent_search_time
         })
 
     except Exception as e:
@@ -105,9 +106,4 @@ def get_hits():
 @api_bp.route('/stats')
 def get_stats():
     """Get basic statistics about the index."""
-    index = search_index.inverted_index
-    return jsonify({
-        "total_words": len(index),
-        "sample_words": list(index.keys())[:5],  # First 5 words
-        "stopwords_count": len(search_index.stopwords),
-    })
+    return jsonify(search_engine.metrics.get_stats())

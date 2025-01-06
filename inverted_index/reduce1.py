@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 import sys
 import itertools
+import logging
+import os
+logging.basicConfig(
+    filename='index_performance.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    force=True
+)
+logging.info(f"Starting {os.path.basename(__file__)}")
 
 def reduce1(group):
     """Reduce input one {WORD DOC_ID} group at a time"""
@@ -21,3 +30,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # At the end of the main processing
+    logging.info(f"Completed {os.path.basename(__file__)}")
