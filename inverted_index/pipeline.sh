@@ -1,9 +1,9 @@
 #!/bin/bash
 
-BASE_HDFS_PATH="/user/maspayne"
+BASE_HDFS_PATH=
 
 # stop on errors
-# set -Eeuo pipefail
+set -Eeuo pipefail
 
 # run pipeline via bash commands (pipes)
 # cat ./input/data.csv | ./map0.py | sort | ./reduce0.py
@@ -12,11 +12,16 @@ BASE_HDFS_PATH="/user/maspayne"
 #                        ./map5.py | sort | ./reduce5.py
 
 # # Hadoop pipeline program -> chaining MapReduce jobs
-# # jar index/hadoop/hadoop-streaming-{VERSION}.jar
-# # - input <directory>       # input directory
-# # - output <directory>      # output directory
-# # - mapper <exec_name>      # mapper executable
-# # - reducer <exec_name>     # reducer executable
+# # mapred streaming -files {FILE1,FILE2...}\
+# # - input <directory> \     # input directory
+# # - output <directory> \    # output directory
+# # - mapper <exec_name> \    # mapper executable
+# # - reducer <exec_name> \   # reducer executable
+
+# Hadoop notes
+# -files puts local files into a distributed cache so they are available to 
+# all task nodes
+
 
 #HADOOP SETUP COMMANDS
 
@@ -73,7 +78,3 @@ mapred streaming -files map5.py,reduce5.py\
     -reducer ./reduce5.py
 
 
-    # Hadoop notes
-    # -files puts local files into a distributed cache so they are available to 
-    # all task nodes
-    # 
