@@ -161,9 +161,7 @@ class SearchEngine:
             
             query_vector = self._calc_query_vector(found_terms)
             query_magnitude = math.sqrt(sum(w * w for w in query_vector.values()))
-            print(f"Query vector: {query_vector}")  # Debug
-            print(f"Query magnitude: {query_magnitude}")  # Debug
-
+            
             if query_magnitude == 0:
                 return []
 
@@ -260,7 +258,6 @@ class SearchEngine:
                     if doc_id in result_docs:
                         weight = float(doc_entry["tfk"]) * float(term_data["idf"])
                         scores[doc_id] += query_weight * weight
-                        print(f"Score update for doc {doc_id}: {scores[doc_id]}")  # Debug
             
             # Normalize and apply boosts
             final_scores = {}
@@ -279,7 +276,6 @@ class SearchEngine:
                         final_score = base_score
                         
                     final_scores[doc_id] = float((math.tanh(final_score) + 1) / 2)
-                    print(f"Final score for doc {doc_id}: {final_scores[doc_id]}")
             
             return final_scores
         except Exception as e:
