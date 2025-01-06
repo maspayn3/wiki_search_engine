@@ -55,6 +55,7 @@ client/.pnpm-debug.log*
 client/.DS_Store
 client/logs
 client/*.local
+client/package-lock.json
 
 # Other JavaScript/Node
 node_modules/
@@ -86,3 +87,5 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+
